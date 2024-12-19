@@ -1,7 +1,7 @@
 from typing import List, Dict
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.schema import SystemMessage
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
