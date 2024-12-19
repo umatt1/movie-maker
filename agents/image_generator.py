@@ -15,17 +15,25 @@ class ImageGeneratorAgent:
             verbose=True,
         )
 
-    def generate(self, story_data: Union[Dict, str]) -> Dict:
+    def generate(self, story_data: Union[Dict, str, List]) -> Dict:
         """
         Generates images for each story chunk using Stability AI.
         Returns the original story data with added image paths.
         
         Args:
-            story_data: Either a dictionary containing story data or a JSON string
+            story_data: Either a dictionary containing story data, a JSON string, or a list
         """
         # Convert string to dict if necessary
         if isinstance(story_data, str):
             story_data = json.loads(story_data)
+        
+        # If story_data is a list, convert it to the expected dictionary format
+        if isinstance(story_data, list):
+            story_data = {
+                'title': story_data[0],
+                'chunks': story_data[1],
+                'total_duration': story_data[2]
+            }
         
         chunks = story_data['chunks']
         for chunk in chunks:

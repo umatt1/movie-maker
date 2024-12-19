@@ -7,7 +7,7 @@ from langchain.tools import Tool
 from pydantic import BaseModel, Field
 from .story_generator import StoryGeneratorAgent
 from .image_generator import ImageGeneratorAgent
-# from .video_creator import VideoCreatorAgent
+from .video_creator import VideoCreatorAgent
 
 class StoryRequest(BaseModel):
     idea: str = Field(..., description="The initial story idea provided by the user")
@@ -17,13 +17,13 @@ class StoryOrchestrator:
         # Initialize sub-agents
         self.story_generator = StoryGeneratorAgent()
         self.image_generator = ImageGeneratorAgent()
-        # self.video_creator = VideoCreatorAgent()
+        self.video_creator = VideoCreatorAgent()
         
         # Create tools from sub-agents
         self.tools = [
             self._create_story_tool(),
             self._create_image_tool(),
-            # self._create_video_tool()
+            self._create_video_tool()
         ]
         
         # Initialize the orchestrator agent
@@ -44,12 +44,13 @@ Do NOT convert the dictionary to a string - pass it exactly as received from gen
             func=self.image_generator.generate,
         )
     
-    # def _create_video_tool(self) -> Tool:
-    #     return Tool(
-    #         name="create_video",
-    #         description="Creates a video from images, text, and generates voice narration",
-    #         func=self.video_creator.create,
-    #     )
+    def _create_video_tool(self) -> Tool:
+        return Tool(
+            name="create_video",
+            description="""Creates a video from the story data with images and narration. 
+Input must be the story dictionary that was returned by generate_images, containing both story chunks and image paths.""",
+            func=self.video_creator.create,
+        )
     
     def _create_agent(self) -> AgentExecutor:
         llm = ChatOpenAI(temperature=0.7, model="gpt-4")
@@ -59,10 +60,14 @@ Do NOT convert the dictionary to a string - pass it exactly as received from gen
 1. First, use the generate_story tool with the user's story idea to create a detailed story.
    The tool will return a dictionary containing the story chunks and other metadata.
 
-2. Take the COMPLETE dictionary output from generate_story and pass it directly to the generate_images tool.
-   Do NOT convert the dictionary to a string or modify it in any way.
+2. Take the COMPLETE dictionary output from generate_story and pass it DIRECTLY to the generate_images tool.
+   Do NOT modify the dictionary or try to extract parts of it. Pass the ENTIRE dictionary as is.
+   
+3. Take the output from generate_images (which now includes image paths) and pass it directly to create_video
+   to create the final video with narration.
 
-Important: Pass the story data between tools exactly as received, maintaining its dictionary format."""
+IMPORTANT: Always pass the complete dictionary between tools. Never try to extract or pass individual fields.
+For example, if generate_story returns {'title': 'Story Title', 'chunks': [...], ...}, pass that ENTIRE dictionary to generate_images."""
 
         prompt = ChatPromptTemplate.from_messages([
             SystemMessage(content=system_message),
