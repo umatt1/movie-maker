@@ -39,7 +39,8 @@ class StoryOrchestrator:
     def _create_image_tool(self) -> Tool:
         return Tool(
             name="generate_images",
-            description="Generates images based on story chunks and prompts",
+            description="""Generates images for each story chunk. Input must be the complete story dictionary returned by generate_story.
+Do NOT convert the dictionary to a string - pass it exactly as received from generate_story.""",
             func=self.image_generator.generate,
         )
     
@@ -53,14 +54,18 @@ class StoryOrchestrator:
     def _create_agent(self) -> AgentExecutor:
         llm = ChatOpenAI(temperature=0.7, model="gpt-4")
         
-        system_message = """You are a creative story-to-video orchestrator. Your goal is to:
-1. Take a user's story idea and generate a detailed, engaging 2-minute story
-2. Create vivid, whimsical images for each story segment
-Follow these steps in order and ensure each step is completed before moving to the next."""
+        system_message = """You are a creative story-to-video orchestrator. Follow these steps in order:
+
+1. First, use the generate_story tool with the user's story idea to create a detailed story.
+   The tool will return a dictionary containing the story chunks and other metadata.
+
+2. Take the COMPLETE dictionary output from generate_story and pass it directly to the generate_images tool.
+   Do NOT convert the dictionary to a string or modify it in any way.
+
+Important: Pass the story data between tools exactly as received, maintaining its dictionary format."""
 
         prompt = ChatPromptTemplate.from_messages([
             SystemMessage(content=system_message),
-            MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])

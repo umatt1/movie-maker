@@ -1,10 +1,11 @@
 import os
-from typing import List, Dict
+from typing import List, Dict, Union
 import stability_sdk.interfaces.gooseai.generation.generation_pb2 as generation
 from stability_sdk import client
 import io
 from PIL import Image
 import base64
+import json
 
 class ImageGeneratorAgent:
     def __init__(self):
@@ -14,12 +15,20 @@ class ImageGeneratorAgent:
             verbose=True,
         )
 
-    def generate(self, story_chunks: List[Dict]) -> List[Dict]:
+    def generate(self, story_data: Union[Dict, str]) -> Dict:
         """
         Generates images for each story chunk using Stability AI.
-        Returns the original chunks with added image paths.
+        Returns the original story data with added image paths.
+        
+        Args:
+            story_data: Either a dictionary containing story data or a JSON string
         """
-        for chunk in story_chunks:
+        # Convert string to dict if necessary
+        if isinstance(story_data, str):
+            story_data = json.loads(story_data)
+        
+        chunks = story_data['chunks']
+        for chunk in chunks:
             # Generate image
             answers = self.stability_api.generate(
                 prompt=chunk['image_prompt'],
@@ -36,7 +45,7 @@ class ImageGeneratorAgent:
                 img = Image.open(io.BytesIO(answer.artifacts[0].binary))
                 
                 # Create unique filename based on chunk index
-                filename = f"image_{story_chunks.index(chunk)}.png"
+                filename = f"image_{chunks.index(chunk)}.png"
                 img_path = os.path.join("output", "images", filename)
                 
                 # Ensure directory exists
@@ -46,4 +55,4 @@ class ImageGeneratorAgent:
                 img.save(img_path)
                 chunk['image_path'] = img_path
 
-        return story_chunks
+        return story_data
